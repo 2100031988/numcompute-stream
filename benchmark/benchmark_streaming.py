@@ -178,4 +178,5 @@ if __name__ == "__main__":
     # --- Vectorised vs loop ---
     benchmark_vectorised_vs_loop(n=100_000)
 
+
     print("\n[Benchmark complete]")
