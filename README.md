@@ -5,7 +5,7 @@
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.8+-blue?logo=python" alt="Python"></a>
   <a href="https://numpy.org"><img src="https://img.shields.io/badge/NumPy-Enabled-orange?logo=numpy" alt="NumPy"></a>
   <a href="https://matplotlib.org"><img src="https://img.shields.io/badge/Matplotlib-Enabled-blue?logo=matplotlib" alt="Matplotlib"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-lightgrey" alt="License"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-GPL--3.0-lightgrey" alt="License"></a>
 </p>
 
 
@@ -22,9 +22,9 @@
 
 ## Overview
 
-**NumCompute** is the core package — a transparent, NumPy-only ML toolkit perfect for learning algorithms from scratch, evaluating pipelines, and building experiments.
+**NumCompute** is the core package which is a lightweight machine learning framework built using **NumPy** and can function on libraries such as **scikit-learn**.
 
-**NumCompute-Stream** extends it with:
+**NumCompute-Stream** It extends numcompute with an additionally python library which includes **numpy** and also **matplotlib**.
 
 - **Streaming Learning** — all components support `.partial_fit()` for chunk-by-chunk updates
 - **Ensemble Methods** — Bagging and Random Forest built from decision trees
@@ -199,7 +199,8 @@ Results across 10 streaming chunks (150 samples, 4 features):
 | Random Forest (n=5, depth=3) | 0.8000 | 18.85 ms | 0.188 s |
 | Random Forest (n=10, depth=5) | 0.8133 | 51.97 ms | 0.520 s |
 
-Plots generated automatically: `tree_accuracy.png`, `model_comparison.png`, `predictions_vs_truth.png`, `streaming_metrics.png`, `confusion_matrix.png`, `feature_importances.png`, `benchmark.png`
+Plots generated automatically: `tree_accuracy.png`, `model_comparison.png`, `predictions_vs_truth.png`, `streaming_metrics.png`, 
+`confusion_matrix.png`, `feature_importances.png`, `benchmark.png`
 
 ---
 
