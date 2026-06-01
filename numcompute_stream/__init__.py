@@ -19,6 +19,8 @@ visualise   : plot_metric_over_time, compare_models,
               plot_feature_importances
 """
 
+# <--------- Imports ----------->
+
 from numcompute_stream.trees import DecisionTreeClassifier
 from numcompute_stream.ensemble import (
     BaggingClassifier,
@@ -38,20 +40,29 @@ from numcompute_stream.metrics import (
 from numcompute_stream.pipeline import StreamingPipeline, Pipeline
 from numcompute_stream import visualise
 
+
+# <--------- Package Metadata ----------->
+
 __version__ = "1.0.0"
 __author__ = "NumCompute-Stream"
 
+
+# <--------- Public API ----------->
+
 __all__ = [
-    # Trees
+    # Trees important for streaming
     "DecisionTreeClassifier",
-    # Ensemble
+
+    # Ensemble methods for streaming
     "BaggingClassifier",
     "RandomForestClassifier",
     "EnsembleClassifier",
-    # Streaming
+
+    # Streaming utilities
     "StreamTrainer",
     "chunk_data",
-    # Metrics
+
+    # Metrics for streaming evaluation
     "StreamingAccuracy",
     "StreamingPrecisionRecallF1",
     "StreamingConfusionMatrix",
@@ -59,9 +70,11 @@ __all__ = [
     "accuracy",
     "precision_recall_f1",
     "confusion_matrix",
-    # Pipeline
+
+    # Pipeline utilities
     "StreamingPipeline",
     "Pipeline",
-    # Visualise
+
+    # Visualise module for streaming metrics and results
     "visualise",
 ]
