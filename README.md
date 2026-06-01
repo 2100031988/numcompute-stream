@@ -1,4 +1,4 @@
-# NumCompute & NumCompute-Stream
+<h1 align="center"> NumCompute-Stream : A Machine Learning Framework </h1>
 
 
 <p align="center">
@@ -12,23 +12,10 @@
 <p align="center">
   <a href="#overview">Overview</a> •
   <a href="#installation">Installation</a> •
-  <a href="#quick-start">Quick Start</a> •
   <a href="#project-structure">Structure</a> •
   <a href="#api-reference">API</a> •
   <a href="#benchmarking">Benchmarking</a> •
   <a href="#running-tests">Tests</a>
-</p>
-
----
-
-## Demo
-
-<p align="center">
-  <img src="demo/demo.gif" alt="NumCompute Demo" width="600">
-</p>
-
-<p align="center">
-  <em><a href="https://www.youtube.com/watch?v=zixmd_Ht3O0&t=1s">Watch the full explanation here!</a></em>
 </p>
 
 ---
@@ -51,7 +38,7 @@
 
 ```
 numcompute-stream/
-├── numcompute/                         ← Core NumCompute package
+├── numcompute/                         
 │   ├── __init__.py
 │   ├── io.py
 │   ├── preprocessing.py
@@ -63,22 +50,22 @@ numcompute-stream/
 │   ├── pipeline.py
 │   └── utils.py
 │
-├── numcompute_stream/                  ← Streaming framework
+├── numcompute_stream/                  
 │   ├── __init__.py
-│   ├── trees.py                        ← DecisionTreeClassifier (Gini/Entropy, partial_fit)
-│   ├── ensemble.py                     ← BaggingClassifier, RandomForestClassifier
-│   ├── streaming.py                    ← StreamTrainer, chunk_data
-│   ├── metrics.py                      ← Streaming metrics (accuracy, PRF1, CM, rolling)
-│   ├── pipeline.py                     ← StreamingPipeline
-│   └── visualise.py                    ← Plotting functions
+│   ├── trees.py                        
+│   ├── ensemble.py                     
+│   ├── streaming.py                   
+│   ├── metrics.py                     
+│   ├── pipeline.py                     
+│   └── visualise.py                    
 │
 ├── tests/
 │   ├── test_numcompute.py
-│   └── test_numcompute_stream.py       ← 30+ unit tests
+│   └── test_numcompute_stream.py       
 │
 ├── demo/
 │   ├── quickstart.ipynb
-│   └── stream_demo.ipynb               ← Full streaming demo notebook
+│   └── stream_demo.ipynb               
 │
 ├── benchmark/
 │   ├── benchmarking.py
@@ -106,81 +93,9 @@ git clone https://github.com/2100031988/numcompute-stream.git
 cd numcompute-stream
 pip install numpy matplotlib pytest
 ```
-
----
-
-## Quick Start
-
-### 1 · NumCompute (Core)
-
-```python
-import numcompute as nc
-
-data = [10, 20, 30, 40, 50]
-
-print("Mean:",       nc.mean(data))
-print("Median:",     nc.median(data))
-print("Std:",        nc.std(data))
-print("Normalized:", nc.normalize(data))
-print("Sorted:",     nc.sort(data))
-print("Search 30:",  nc.binary_search(data, 30))
-print("MSE:",        nc.mse([1, 2, 3], [1, 2, 4]))
-```
-
-### 2 · NumCompute-Stream (Streaming)
-
-```python
-import numpy as np
-from numcompute_stream.trees import DecisionTreeClassifier
-from numcompute_stream.ensemble import RandomForestClassifier
-from numcompute_stream.streaming import StreamTrainer, chunk_data
-from numcompute_stream import visualise
-
-# Iris dataset — 150 samples, 4 features, 10 chunks of 15
-X, y = load_iris_data()
-
-tree = DecisionTreeClassifier(max_depth=3, random_state=0)
-rf   = RandomForestClassifier(n_estimators=10, max_depth=5, random_state=0)
-
-t1 = StreamTrainer(tree, verbose=True)
-t2 = StreamTrainer(rf,   verbose=True)
-
-for X_chunk, y_chunk in chunk_data(X, y, chunk_size=15):
-    t1.fit_chunk(X_chunk, y_chunk)
-    t2.fit_chunk(X_chunk, y_chunk)
-
-# Decision Tree  → 0.8600 accuracy
-# Random Forest  → 0.8133 accuracy
-
-visualise.compare_models(
-    t1.get_metric_history("metric"),
-    t2.get_metric_history("metric"),
-    labels=("Decision Tree", "Random Forest")
-)
-```
-
-### 3 · Pipeline
-
-```python
-from numcompute_stream.pipeline import StreamingPipeline
-from numcompute.preprocessing import StandardScaler
-
-pipe = StreamingPipeline([
-    ("scaler", StandardScaler()),
-    ("model",  RandomForestClassifier(n_estimators=5, max_depth=3)),
-])
-
-for X_chunk, y_chunk in chunk_data(X, y, chunk_size=15):
-    pipe.partial_fit(X_chunk, y_chunk)
-
-# Pipeline → 0.8400 accuracy  (plots saved automatically)
-```
-
 ---
 
 ## API Reference
-
-<br>
 
 ### § 1 &nbsp;·&nbsp; `numcompute` — Core Package
 
@@ -199,13 +114,11 @@ for X_chunk, y_chunk in chunk_data(X, y, chunk_size=15):
 | `pipeline` | `.fit(X)` | Fits the pipeline to data |
 | `pipeline` | `.transform(X)` | Applies transformations to data |
 
-<br>
-
----
+</br>
 
 ### § 2 &nbsp;·&nbsp; `numcompute_stream` — Streaming Framework
 
-<br>
+</br>
 
 #### § 2.1 &nbsp; `numcompute_stream.trees`
 
