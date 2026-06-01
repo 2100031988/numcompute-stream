@@ -26,12 +26,24 @@
 
 **NumCompute-Stream** It extends numcompute with an additionally python library which includes **numpy** and also **matplotlib**.
 
-- **Streaming Learning** — all components support `.partial_fit()` for chunk-by-chunk updates
-- **Ensemble Methods** — Bagging and Random Forest built from decision trees
-- **Built-in Visualisation** — matplotlib-based plotting for metrics, comparisons, and predictions
-- **Streaming Metrics** — cumulative accuracy, precision/recall/F1, confusion matrix, rolling accuracy
-- **Streaming Pipeline** — chain transformers and estimators with a shared `.partial_fit()` interface
+There are numerous usages of this library but some listed below:
+  1. It is a perfect tool for real-time and incremental learning where data arrives in chunks rather than all at once.
+  2. We can learn how ensemble methods like Bagging and Random Forest work from scratch using only NumPy.
+  3. Lastly, the most important usage is streaming pipelines where we can chain transformers and estimators and watch model performance evolve chunk by chunk.
 
+---
+
+## Installation
+
+### Install from Source
+
+We can install the projec from my repository through github commands in the **terminal** in visual studio code.
+
+```bash
+git clone https://github.com/2100031988/numcompute-stream.git
+cd numcompute-stream
+pip install numpy matplotlib
+```
 ---
 
 ## Project Structure
@@ -76,17 +88,6 @@ numcompute-stream/
 └── LICENSE
 ```
 
----
-
-## Installation
-
-### Install from Source
-
-```bash
-git clone https://github.com/2100031988/numcompute-stream.git
-cd numcompute-stream
-pip install numpy matplotlib pytest
-```
 ---
 
 ## API Reference
