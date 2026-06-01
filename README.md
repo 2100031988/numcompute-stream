@@ -80,13 +80,7 @@ numcompute-stream/
 
 ## Installation
 
-### Option 1: Install from TestPyPI
-
-```bash
-pip install -i https://test.pypi.org/simple/ numcompute
-```
-
-### Option 2: Install from Source
+### Install from Source
 
 ```bash
 git clone https://github.com/2100031988/numcompute-stream.git
