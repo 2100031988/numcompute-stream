@@ -14,6 +14,9 @@ Required functions (per spec):
 Author: NumCompute-Stream
 """
 
+
+# <--------- imports and using matplot library--------->
+
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
@@ -22,6 +25,9 @@ import matplotlib.ticker as mticker
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
+
+# <--------- internal helper functions --------->
 
 def _save_or_show(fig, save_path: str = None):
     """Show figure inline or save to file.
@@ -42,6 +48,9 @@ def _save_or_show(fig, save_path: str = None):
 # ---------------------------------------------------------------------------
 # Required plots
 # ---------------------------------------------------------------------------
+
+
+# <--------- required plot functions --------->
 
 def plot_metric_over_time(metric_values, title: str = "Metric Over Time",
                            ylabel: str = "Metric",
@@ -66,15 +75,19 @@ def plot_metric_over_time(metric_values, title: str = "Metric Over Time",
     --------
     >>> plot_metric_over_time(trainer.get_metric_history(), title="Accuracy")
     """
+
+
+#  <--------- input validation --------->
+
     metric_values = np.array(metric_values, dtype=float)
     chunks = np.arange(len(metric_values))
 
     fig, ax = plt.subplots(figsize=figsize)
     ax.plot(chunks, metric_values, color=color, linewidth=2, marker="o",
             markersize=4, label=ylabel)
+    
     ax.fill_between(chunks, metric_values, alpha=0.15, color=color)
 
-    # Rolling mean overlay
     if len(metric_values) >= 5:
         window = min(5, len(metric_values))
         rolling = np.convolve(metric_values,
@@ -86,6 +99,7 @@ def plot_metric_over_time(metric_values, title: str = "Metric Over Time",
     ax.set_title(title, fontsize=14, fontweight="bold", pad=12)
     ax.set_xlabel(xlabel, fontsize=11)
     ax.set_ylabel(ylabel, fontsize=11)
+
     ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.3f"))
     ax.legend(fontsize=9)
     ax.grid(True, linestyle="--", alpha=0.4)
@@ -93,6 +107,9 @@ def plot_metric_over_time(metric_values, title: str = "Metric Over Time",
 
     _save_or_show(fig, save_path)
 
+
+
+# <--------- additional plot functions --------->
 
 def compare_models(metric1, metric2, labels=("Model 1", "Model 2"),
                    title: str = "Model Comparison",
@@ -121,6 +138,7 @@ def compare_models(metric1, metric2, labels=("Model 1", "Model 2"),
     --------
     >>> compare_models(tree_acc, rf_acc, labels=("Single Tree", "Random Forest"))
     """
+
     m1 = np.array(metric1, dtype=float)
     m2 = np.array(metric2, dtype=float)
     n = max(len(m1), len(m2))
@@ -139,6 +157,7 @@ def compare_models(metric1, metric2, labels=("Model 1", "Model 2"),
     ax.set_title(title, fontsize=14, fontweight="bold", pad=12)
     ax.set_xlabel(xlabel, fontsize=11)
     ax.set_ylabel(ylabel, fontsize=11)
+
     ax.yaxis.set_major_formatter(mticker.FormatStrFormatter("%.3f"))
     ax.legend(fontsize=10)
     ax.grid(True, linestyle="--", alpha=0.4)
@@ -152,6 +171,7 @@ def plot_predictions_vs_ground_truth(y_true, y_pred,
                                       save_path: str = None,
                                       max_samples: int = 100,
                                       figsize=(10, 4)):
+    
     """Visualise predictions vs actual labels for the latest chunk.
 
     Shows a side-by-side scatter or strip plot of true vs predicted labels.
@@ -169,6 +189,10 @@ def plot_predictions_vs_ground_truth(y_true, y_pred,
     --------
     >>> plot_predictions_vs_ground_truth(y_test, model.predict(X_test))
     """
+
+
+# <--------- using functions like plot_predictions_vs_ground_truth to find insights --------->
+
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
 
@@ -183,8 +207,10 @@ def plot_predictions_vs_ground_truth(y_true, y_pred,
 
     ax.scatter(idx[correct], yt[correct], color="#4CAF50", s=30,
                label="Correct", zorder=3, alpha=0.8)
+    
     ax.scatter(idx[~correct], yt[~correct], color="#F44336", s=30,
                marker="x", label="Wrong (true)", zorder=3, alpha=0.9)
+    
     ax.scatter(idx[~correct], yp[~correct], color="#FF9800", s=30,
                marker="^", label="Wrong (pred)", zorder=3, alpha=0.9)
 
@@ -194,6 +220,10 @@ def plot_predictions_vs_ground_truth(y_true, y_pred,
     ax.set_xlabel("Sample index", fontsize=11)
     ax.set_ylabel("Class label", fontsize=11)
     ax.legend(fontsize=9, loc="upper right")
+
+
+# <--------- grid and layout --------->
+
     ax.grid(True, linestyle="--", alpha=0.3)
     fig.tight_layout()
 
@@ -225,6 +255,9 @@ def plot_confusion_matrix(y_true, y_pred, classes=None,
     --------
     >>> plot_confusion_matrix(y_test, preds, classes=[0, 1, 2])
     """
+
+# <--------- input validation with error handling --------->
+
     y_true = np.array(y_true)
     y_pred = np.array(y_pred)
 
@@ -234,6 +267,7 @@ def plot_confusion_matrix(y_true, y_pred, classes=None,
     n = len(classes)
     class_to_idx = {c: i for i, c in enumerate(classes)}
     cm = np.zeros((n, n), dtype=int)
+
     for t, p in zip(y_true, y_pred):
         if t in class_to_idx and p in class_to_idx:
             cm[class_to_idx[t], class_to_idx[p]] += 1
@@ -245,6 +279,9 @@ def plot_confusion_matrix(y_true, y_pred, classes=None,
     ax.set(xticks=np.arange(n), yticks=np.arange(n),
            xticklabels=classes, yticklabels=classes,
            ylabel="True label", xlabel="Predicted label", title=title)
+    
+
+# <--------- text annotations --------->
 
     thresh = cm.max() / 2.0
     for i in range(n):
@@ -259,6 +296,8 @@ def plot_confusion_matrix(y_true, y_pred, classes=None,
     _save_or_show(fig, save_path)
 
 
+#<--------- more additional plots --------->
+
 def plot_memory_over_time(logs: list,
                            title: str = "Memory Footprint Over Chunks",
                            save_path: str = None,
@@ -272,6 +311,9 @@ def plot_memory_over_time(logs: list,
     save_path : str or None
     figsize : tuple
     """
+
+# <--------- extract memory info from logs --------->
+
     chunks = [r["chunk"] for r in logs]
     mem_kb = [r.get("memory_bytes", 0) / 1024 for r in logs]
 
@@ -284,6 +326,8 @@ def plot_memory_over_time(logs: list,
     fig.tight_layout()
     _save_or_show(fig, save_path)
 
+
+# <--------- feature importance plot for tree-based models --------->
 
 def plot_feature_importances(importances: np.ndarray,
                               feature_names=None,
@@ -300,8 +344,12 @@ def plot_feature_importances(importances: np.ndarray,
     save_path : str or None
     figsize : tuple
     """
+
+# <--------- input validation with feature names --------->
+
     importances = np.array(importances)
     n = len(importances)
+
     if feature_names is None:
         feature_names = [f"f{i}" for i in range(n)]
 
@@ -310,10 +358,15 @@ def plot_feature_importances(importances: np.ndarray,
     sorted_names = [feature_names[i] for i in order]
 
     fig, ax = plt.subplots(figsize=figsize)
+
+
+# <--------- bar chart with sorted importances --------->
+
     ax.bar(range(n), sorted_imp, color="#FF5722", alpha=0.8)
     ax.set_xticks(range(n))
     ax.set_xticklabels(sorted_names, rotation=45, ha="right", fontsize=9)
     ax.set_title(title, fontsize=13, fontweight="bold", pad=10)
+
     ax.set_xlabel("Feature", fontsize=11)
     ax.set_ylabel("Importance", fontsize=11)
     ax.grid(True, axis="y", linestyle="--", alpha=0.4)

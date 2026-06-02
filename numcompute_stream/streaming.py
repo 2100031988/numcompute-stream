@@ -49,6 +49,8 @@ class StreamTrainer:
     >>> print(trainer.logs_)
     """
 
+# <---------- function definitions ---------->
+
     def __init__(self, model, preprocessor=None, metric_fn=None,
                  verbose: bool = True):
         self.model = model
@@ -68,24 +70,32 @@ class StreamTrainer:
     @staticmethod
     def _accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
         """Default metric: accuracy."""
+
         y_true = np.array(y_true)
         y_pred = np.array(y_pred)
+
         if y_true.size == 0:
             return 0.0
+        
         return float(np.mean(y_true == y_pred))
+
+
+# <------ memory estimation and preprocessing ------->
 
     def _memory_of(self, obj) -> int:
         """Rough memory estimate in bytes using numpy array sizes."""
         total = 0
-        # Check for accumulated data arrays in common attribute names
+
         for attr in ("_X_seen", "_y_seen"):
             arr = getattr(obj, attr, None)
             if isinstance(arr, np.ndarray):
                 total += arr.nbytes
+
         return total
 
     def _preprocess(self, X: np.ndarray, fit: bool = True) -> np.ndarray:
         """Apply preprocessor if present."""
+
         if self.preprocessor is None:
             return X
         if fit:
@@ -121,7 +131,6 @@ class StreamTrainer:
         # Preprocess
         X_proc = self._preprocess(X, fit=True)
 
-        # Predict BEFORE updating (test on unseen chunk)
         chunk_metric = 0.0
         if self._chunk_idx > 0:
             try:
@@ -131,7 +140,6 @@ class StreamTrainer:
             except Exception:
                 pass
 
-        # Update model
         self.model.partial_fit(X_proc, y)
         elapsed = time.perf_counter() - t0
 
@@ -166,6 +174,9 @@ class StreamTrainer:
         self._chunk_idx += 1
         return record
 
+
+# <--------- evaluation and logging ----------->
+
     def score_chunk(self, X: np.ndarray, y: np.ndarray) -> float:
         """Evaluate current model on a held-out chunk without updating.
 
@@ -178,11 +189,17 @@ class StreamTrainer:
         -------
         float : metric score
         """
+
         X = np.atleast_2d(np.array(X, dtype=float))
         y = np.array(y)
+
         X_proc = self._preprocess(X, fit=False)
         y_pred = self.model.predict(X_proc)
+
         return self.metric_fn(y, y_pred)
+
+
+# <--------- metric history and summary --------->
 
     def get_metric_history(self, key: str = "metric") -> np.ndarray:
         """Extract a metric history from logs.
@@ -197,16 +214,25 @@ class StreamTrainer:
         -------
         np.ndarray, shape (n_chunks,)
         """
+
         if not self.logs_:
             return np.array([])
+        
         return np.array([rec.get(key, 0.0) for rec in self.logs_])
+
+
+# <--------- reset and summary --------->
 
     def reset(self):
         """Reset logs and chunk counter (model state is preserved)."""
+
         self.logs_ = []
         self._chunk_idx = 0
         self._total_correct = 0
         self._total_seen = 0
+
+
+# <--------- summary and repr --------->
 
     def summary(self) -> dict:
         """Return a summary of all chunks.
@@ -220,6 +246,7 @@ class StreamTrainer:
             return {}
         metrics = self.get_metric_history("metric")
         times = self.get_metric_history("time_s")
+
         return {
             "n_chunks": len(self.logs_),
             "total_samples": self._total_seen,
@@ -229,6 +256,7 @@ class StreamTrainer:
         }
 
     def __repr__(self):
+
         return (
             f"StreamTrainer(model={self.model.__class__.__name__}, "
             f"chunks_seen={self._chunk_idx})"
@@ -264,8 +292,12 @@ def chunk_data(X: np.ndarray, y: np.ndarray,
     X = np.atleast_2d(np.array(X, dtype=float))
     y = np.array(y)
 
+
+#  <--------- input validation and shuffling --------->
+
     if X.shape[0] != y.shape[0]:
         raise ValueError("X and y must have the same number of rows.")
+    
     if chunk_size < 1:
         raise ValueError("chunk_size must be >= 1")
 

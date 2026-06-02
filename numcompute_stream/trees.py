@@ -27,12 +27,19 @@ def _gini(y: np.ndarray) -> float:
     -------
     float : Gini impurity in [0, 0.5]
     """
+
+#  <--------- impurity calculations --------->
+
     if y.size == 0:
         return 0.0
+    
     classes, counts = np.unique(y, return_counts=True)
     probs = counts / counts.sum()
+
     return float(1.0 - np.sum(probs ** 2))
 
+
+# <--------- best split finding --------->
 
 def _entropy(y: np.ndarray) -> float:
     """Compute Shannon entropy for label array y.
@@ -45,24 +52,32 @@ def _entropy(y: np.ndarray) -> float:
     -------
     float : entropy >= 0
     """
+
     if y.size == 0:
         return 0.0
+    
     _, counts = np.unique(y, return_counts=True)
     probs = counts / counts.sum()
-    # Clip to avoid log(0)
     probs = np.clip(probs, 1e-12, 1.0)
+
     return float(-np.sum(probs * np.log2(probs)))
 
 
+# <--------- impurity calculations --------->
+
 def _impurity(y: np.ndarray, criterion: str) -> float:
     """Dispatch to the correct impurity function."""
+
     if criterion == "gini":
         return _gini(y)
     elif criterion == "entropy":
         return _entropy(y)
+    
     else:
         raise ValueError(f"Unknown criterion '{criterion}'. Use 'gini' or 'entropy'.")
 
+
+# <--------- function for finding best split   --------->
 
 def _best_split(X: np.ndarray, y: np.ndarray, criterion: str,
                 max_features=None, rng=None):
@@ -82,14 +97,19 @@ def _best_split(X: np.ndarray, y: np.ndarray, criterion: str,
     best_thresh : float or None
     best_gain : float
     """
+
     n_samples, n_features = X.shape
+
     if n_samples < 2:
         return None, None, 0.0
 
-    # Feature subsampling (for Random Forest)
+
+# <--------- here, we calculate the best split using vectorised operations --------->
+
     if rng is None:
         rng = np.random.default_rng()
     feat_indices = np.arange(n_features)
+
     if max_features is not None and max_features < n_features:
         feat_indices = rng.choice(n_features, size=max_features, replace=False)
 
@@ -100,15 +120,18 @@ def _best_split(X: np.ndarray, y: np.ndarray, criterion: str,
 
     for feat in feat_indices:
         col = X[:, feat]
-        # Skip zero-variance features
+
         if np.nanstd(col) == 0:
             continue
 
-        # Candidate thresholds: midpoints of sorted unique values
         unique_vals = np.unique(col[~np.isnan(col)])
         if unique_vals.size < 2:
             continue
+
         thresholds = (unique_vals[:-1] + unique_vals[1:]) / 2.0
+
+
+#  <--------- loop over features and thresholds to find the best split --------->
 
         for thresh in thresholds:
             mask = col <= thresh
@@ -124,6 +147,7 @@ def _best_split(X: np.ndarray, y: np.ndarray, criterion: str,
                 (n_l / n_total) * _impurity(left_y, criterion) +
                 (n_r / n_total) * _impurity(right_y, criterion)
             )
+
             if gain > best_gain:
                 best_gain = gain
                 best_feat = feat
@@ -141,17 +165,21 @@ class _Node:
 
     __slots__ = ("feat", "thresh", "left", "right", "value", "n_samples")
 
+
+#  <--------- simple class to represent a node in the decision tree --------->
+
     def __init__(self, feat=None, thresh=None, left=None,
                  right=None, value=None, n_samples=0):
         self.feat = feat
         self.thresh = thresh
         self.left = left
         self.right = right
-        self.value = value       # Leaf prediction (class label)
+        self.value = value       
         self.n_samples = n_samples
 
     @property
     def is_leaf(self):
+
         return self.value is not None
 
 
@@ -176,10 +204,14 @@ class DecisionTreeClassifier:
 
     Examples
     --------
+
     >>> clf = DecisionTreeClassifier(max_depth=3)
     >>> clf.partial_fit(X_train, y_train)
     >>> preds = clf.predict(X_test)
     """
+
+
+# <--------- main class for the decision tree classifier --------->
 
     def __init__(self, max_depth: int = 5, min_samples_split: int = 2,
                  criterion: str = "gini", max_features=None,
@@ -202,7 +234,6 @@ class DecisionTreeClassifier:
         self._n_features = None
         self._rng = np.random.default_rng(random_state)
 
-        # Streaming state: store all seen data for re-fitting
         self._X_seen = None
         self._y_seen = None
 
@@ -210,16 +241,22 @@ class DecisionTreeClassifier:
     # Private build helpers
     # ------------------------------------------------------------------
 
+
+#  <--------- helper methods for building the tree and making predictions --------->
+
     def _leaf_value(self, y: np.ndarray):
         """Return majority class (tie-broken by smallest class label)."""
         classes, counts = np.unique(y, return_counts=True)
+
         return classes[np.argmax(counts)]
+
+
+# <--------- helper method to compute the majority class for a leaf node --------->
 
     def _build(self, X: np.ndarray, y: np.ndarray, depth: int) -> _Node:
         n_samples = X.shape[0]
         node = _Node(n_samples=n_samples)
 
-        # Stopping criteria
         if (depth >= self.max_depth or
                 n_samples < self.min_samples_split or
                 np.unique(y).size == 1):
@@ -239,7 +276,11 @@ class DecisionTreeClassifier:
         node.thresh = thresh
         node.left = self._build(X[mask], y[mask], depth + 1)
         node.right = self._build(X[~mask], y[~mask], depth + 1)
+
         return node
+
+
+# <--------- recursive method to build the tree based on the best splits --------->
 
     def _predict_one(self, x: np.ndarray, node: _Node):
         """Traverse tree for a single sample."""
@@ -247,11 +288,15 @@ class DecisionTreeClassifier:
             return node.value
         if np.isnan(x[node.feat]) or x[node.feat] <= node.thresh:
             return self._predict_one(x, node.left)
+        
         return self._predict_one(x, node.right)
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
+
+
+# <--------- public methods for fitting, predicting, and scoring the tree --------->
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "DecisionTreeClassifier":
         """Fit tree from scratch on (X, y).
@@ -278,7 +323,11 @@ class DecisionTreeClassifier:
         self._X_seen = X.copy()
         self._y_seen = y.copy()
         self._root = self._build(X, y, depth=0)
+
         return self
+
+
+# <--------- fit method to build the tree from scratch --------->
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
                     classes=None) -> "DecisionTreeClassifier":
@@ -306,7 +355,6 @@ class DecisionTreeClassifier:
                 f"Shape mismatch: X has {X.shape[0]} rows, y has {y.shape[0]}"
             )
 
-        # Handle NaNs: replace with column median
         col_medians = np.nanmedian(X, axis=0)
         nan_mask = np.isnan(X)
         X[nan_mask] = np.take(col_medians, np.where(nan_mask)[1])
@@ -319,6 +367,7 @@ class DecisionTreeClassifier:
             else:
                 self._classes = np.unique(y)
             self._n_features = X.shape[1]
+
         else:
             if X.shape[1] != self._n_features:
                 raise ValueError(
@@ -329,7 +378,11 @@ class DecisionTreeClassifier:
             self._classes = np.unique(self._y_seen)
 
         self._root = self._build(self._X_seen, self._y_seen, depth=0)
+
         return self
+
+
+# <--------- partial_fit method to incrementally update the tree with new data --------->
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Predict class labels for samples in X.
@@ -349,7 +402,11 @@ class DecisionTreeClassifier:
             raise ValueError(
                 f"Expected {self._n_features} features, got {X.shape[1]}"
             )
+        
         return np.array([self._predict_one(x, self._root) for x in X])
+    
+
+# <--------- predict method to traverse the tree and return class labels --------->
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """Predict class probabilities (soft predictions).
@@ -362,17 +419,24 @@ class DecisionTreeClassifier:
         -------
         np.ndarray, shape (n_samples, n_classes)
         """
+
         if self._root is None:
             raise RuntimeError("Tree is not fitted yet.")
         X = np.atleast_2d(np.array(X, dtype=float))
+
         preds = self.predict(X)
         n_classes = len(self._classes)
         proba = np.zeros((X.shape[0], n_classes))
+
         class_to_idx = {c: i for i, c in enumerate(self._classes)}
         for i, p in enumerate(preds):
             if p in class_to_idx:
                 proba[i, class_to_idx[p]] = 1.0
+
         return proba
+
+
+# <--------- predict_proba method to return class probabilities --------->
 
     def score(self, X: np.ndarray, y: np.ndarray) -> float:
         """Return accuracy on (X, y).
@@ -386,6 +450,7 @@ class DecisionTreeClassifier:
         -------
         float : accuracy in [0, 1]
         """
+
         preds = self.predict(X)
         return float(np.mean(preds == np.array(y)))
 
@@ -398,6 +463,9 @@ class DecisionTreeClassifier:
     def n_features_in_(self):
         """Number of input features."""
         return self._n_features
+
+
+# <--------- score method to compute accuracy --------->
 
     def __repr__(self):
         return (
