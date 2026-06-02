@@ -19,6 +19,8 @@ from numcompute_stream.trees import DecisionTreeClassifier
 class _BaseEnsemble:
     """Shared interface for all ensemble methods."""
 
+# <--------- Base Ensemble Class ----------->
+
     def __init__(self, n_estimators: int, max_depth: int,
                  min_samples_split: int, criterion: str,
                  random_state=None):
@@ -33,6 +35,9 @@ class _BaseEnsemble:
         self._classes = None
         self._n_features = None
 
+
+# <--------- Common Methods ----------->
+
     def _majority_vote(self, predictions: np.ndarray) -> np.ndarray:
         """Return majority-vote predictions across estimators.
 
@@ -46,11 +51,16 @@ class _BaseEnsemble:
         """
         n_samples = predictions.shape[1]
         result = np.empty(n_samples, dtype=predictions.dtype)
+        
         for i in range(n_samples):
             col = predictions[:, i]
             classes, counts = np.unique(col, return_counts=True)
             result[i] = classes[np.argmax(counts)]
+
         return result
+
+
+# <--------- Prediction & Scoring ----------->
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Predict class labels by majority vote.
@@ -65,9 +75,14 @@ class _BaseEnsemble:
         """
         if not self._estimators:
             raise RuntimeError("Ensemble is not fitted. Call partial_fit() first.")
+        
         X = np.atleast_2d(np.array(X, dtype=float))
+
         all_preds = np.array([est.predict(X) for est in self._estimators])
         return self._majority_vote(all_preds)
+
+
+# <--------- Probability Prediction & Scoring ----------->
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """Predict averaged class probabilities across all trees.
@@ -85,9 +100,14 @@ class _BaseEnsemble:
         X = np.atleast_2d(np.array(X, dtype=float))
         n_classes = len(self._classes)
         proba_sum = np.zeros((X.shape[0], n_classes))
+
         for est in self._estimators:
             proba_sum += est.predict_proba(X)
+
         return proba_sum / len(self._estimators)
+
+
+# <--------- Scoring ----------->
 
     def score(self, X: np.ndarray, y: np.ndarray) -> float:
         """Return accuracy on (X, y).
@@ -101,6 +121,7 @@ class _BaseEnsemble:
         -------
         float
         """
+
         return float(np.mean(self.predict(X) == np.array(y)))
 
     @property
@@ -143,6 +164,9 @@ class BaggingClassifier(_BaseEnsemble):
     >>> preds = clf.predict(X_test)
     """
 
+
+# <--------- Initialization & Data Handling ----------->
+
     def __init__(self, n_estimators: int = 10, max_depth: int = 5,
                  min_samples_split: int = 2, criterion: str = "gini",
                  max_samples: float = 1.0, random_state=None):
@@ -152,7 +176,6 @@ class BaggingClassifier(_BaseEnsemble):
             raise ValueError("max_samples must be in (0, 1]")
         self.max_samples = max_samples
 
-        # Accumulate streaming data
         self._X_seen = None
         self._y_seen = None
 
@@ -161,13 +184,18 @@ class BaggingClassifier(_BaseEnsemble):
         n = X.shape[0]
         n_draw = max(1, int(n * self.max_samples))
         idx = self._rng.integers(0, n, size=n_draw)
+
         return X[idx], y[idx]
+
+
+# <--------- Model Building & Updating ----------->
 
     def _rebuild(self):
         """Rebuild all estimators from accumulated data."""
         X, y = self._X_seen, self._y_seen
         self._estimators = []
         seeds = self._rng.integers(0, 2**31, size=self.n_estimators)
+
         for seed in seeds:
             X_b, y_b = self._bootstrap(X, y)
             tree = DecisionTreeClassifier(
@@ -178,6 +206,9 @@ class BaggingClassifier(_BaseEnsemble):
             )
             tree.fit(X_b, y_b)
             self._estimators.append(tree)
+
+
+# <--------- Fitting & Incremental Updating ----------->
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "BaggingClassifier":
         """Fit ensemble from scratch.
@@ -193,12 +224,17 @@ class BaggingClassifier(_BaseEnsemble):
         """
         X = np.atleast_2d(np.array(X, dtype=float))
         y = np.array(y)
+
         self._X_seen = X.copy()
         self._y_seen = y.copy()
         self._classes = np.unique(y)
         self._n_features = X.shape[1]
         self._rebuild()
+
         return self
+
+
+# <--------- Incremental Updating ----------->
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
                     classes=None) -> "BaggingClassifier":
@@ -217,7 +253,6 @@ class BaggingClassifier(_BaseEnsemble):
         X = np.atleast_2d(np.array(X, dtype=float))
         y = np.array(y)
 
-        # Handle NaNs
         col_medians = np.nanmedian(X, axis=0)
         nan_mask = np.isnan(X)
         X[nan_mask] = np.take(col_medians, np.where(nan_mask)[1])
@@ -227,11 +262,13 @@ class BaggingClassifier(_BaseEnsemble):
             self._y_seen = y
             self._classes = np.array(classes) if classes is not None else np.unique(y)
             self._n_features = X.shape[1]
+
         else:
             if X.shape[1] != self._n_features:
                 raise ValueError(
                     f"Feature count mismatch: expected {self._n_features}, got {X.shape[1]}"
                 )
+            
             self._X_seen = np.vstack([self._X_seen, X])
             self._y_seen = np.concatenate([self._y_seen, y])
             self._classes = np.unique(self._y_seen)
@@ -280,6 +317,9 @@ class RandomForestClassifier(_BaseEnsemble):
     >>> preds = rf.predict(X_test)
     """
 
+
+# <--------- Initialization & Data Handling ----------->
+
     def __init__(self, n_estimators: int = 10, max_depth: int = 5,
                  min_samples_split: int = 2, criterion: str = "gini",
                  max_features="sqrt", max_samples: float = 1.0,
@@ -298,6 +338,7 @@ class RandomForestClassifier(_BaseEnsemble):
             return n_features
         if isinstance(self.max_features, int):
             return min(self.max_features, n_features)
+        
         if self.max_features == "sqrt":
             return max(1, int(np.sqrt(n_features)))
         if self.max_features == "log2":
@@ -306,11 +347,15 @@ class RandomForestClassifier(_BaseEnsemble):
             f"Invalid max_features='{self.max_features}'. "
             "Use 'sqrt', 'log2', int, or None."
         )
+    
+
+# <--------- Bootstrap Sampling ----------->
 
     def _bootstrap(self, X: np.ndarray, y: np.ndarray):
         n = X.shape[0]
         n_draw = max(1, int(n * self.max_samples))
         idx = self._rng.integers(0, n, size=n_draw)
+
         return X[idx], y[idx]
 
     def _rebuild(self):
@@ -319,6 +364,7 @@ class RandomForestClassifier(_BaseEnsemble):
         mf = self._resolve_max_features(n_features)
         self._estimators = []
         seeds = self._rng.integers(0, 2**31, size=self.n_estimators)
+
         for seed in seeds:
             X_b, y_b = self._bootstrap(X, y)
             tree = DecisionTreeClassifier(
@@ -328,8 +374,12 @@ class RandomForestClassifier(_BaseEnsemble):
                 max_features=mf,
                 random_state=int(seed)
             )
+
             tree.fit(X_b, y_b)
             self._estimators.append(tree)
+
+
+# <--------- Fitting & Incremental Updating ----------->
 
     def fit(self, X: np.ndarray, y: np.ndarray) -> "RandomForestClassifier":
         """Fit Random Forest from scratch.
@@ -345,12 +395,17 @@ class RandomForestClassifier(_BaseEnsemble):
         """
         X = np.atleast_2d(np.array(X, dtype=float))
         y = np.array(y)
+
         self._X_seen = X.copy()
         self._y_seen = y.copy()
         self._classes = np.unique(y)
         self._n_features = X.shape[1]
         self._rebuild()
+
         return self
+
+
+# <--------- Incremental Updating ----------->
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
                     classes=None) -> "RandomForestClassifier":
@@ -369,7 +424,6 @@ class RandomForestClassifier(_BaseEnsemble):
         X = np.atleast_2d(np.array(X, dtype=float))
         y = np.array(y)
 
-        # NaN imputation with column medians
         col_medians = np.nanmedian(X, axis=0)
         nan_mask = np.isnan(X)
         X[nan_mask] = np.take(col_medians, np.where(nan_mask)[1])
@@ -379,17 +433,22 @@ class RandomForestClassifier(_BaseEnsemble):
             self._y_seen = y
             self._classes = np.array(classes) if classes is not None else np.unique(y)
             self._n_features = X.shape[1]
+
         else:
             if X.shape[1] != self._n_features:
                 raise ValueError(
                     f"Feature mismatch: expected {self._n_features}, got {X.shape[1]}"
                 )
+            
             self._X_seen = np.vstack([self._X_seen, X])
             self._y_seen = np.concatenate([self._y_seen, y])
             self._classes = np.unique(self._y_seen)
 
         self._rebuild()
         return self
+    
+
+# <--------- Feature Importances ----------->
 
     def feature_importances_(self) -> np.ndarray:
         """Compute mean impurity decrease across all trees per feature.
@@ -402,10 +461,14 @@ class RandomForestClassifier(_BaseEnsemble):
             raise RuntimeError("Model not fitted.")
         # Approximate: count how often each feature is used as a split node
         counts = np.zeros(self._n_features)
+
         for tree in self._estimators:
             self._count_feature_uses(tree._root, counts)
         total = counts.sum()
         return counts / total if total > 0 else counts
+
+
+# <--------- Helper for Feature Importances ----------->
 
     def _count_feature_uses(self, node, counts):
         if node is None or node.is_leaf:

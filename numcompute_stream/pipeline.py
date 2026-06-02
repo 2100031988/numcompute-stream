@@ -38,8 +38,10 @@ class StreamingPipeline:
     """
 
     def __init__(self, steps: list):
+
         if not steps:
             raise ValueError("steps must be a non-empty list.")
+        
         self._validate_steps(steps)
         self.steps = steps
 
@@ -50,20 +52,23 @@ class StreamingPipeline:
     @staticmethod
     def _validate_steps(steps):
         for i, (name, obj) in enumerate(steps):
+
             if not isinstance(name, str):
                 raise TypeError(
                     f"Step name at index {i} must be a string, got {type(name)}"
                 )
+            
             if obj is None:
                 raise ValueError(f"Step '{name}' is None.")
-            # All but last must have transform
+
             if i < len(steps) - 1:
                 if not hasattr(obj, "transform"):
+
                     raise TypeError(
                         f"Step '{name}' (index {i}) must have a .transform() method "
                         f"since it is not the final step."
                     )
-            # Last must have predict
+
             else:
                 if not hasattr(obj, "predict"):
                     raise TypeError(
@@ -96,24 +101,30 @@ class StreamingPipeline:
     def _fit_transform(self, X: np.ndarray, y=None) -> np.ndarray:
         """Fit all transformers and transform X."""
         X_out = X
+
         for name, transformer in self._transformers:
             if hasattr(transformer, "partial_fit"):
                 transformer.partial_fit(X_out)
+
             elif hasattr(transformer, "fit"):
                 transformer.fit(X_out)
             X_out = transformer.transform(X_out)
+
         return X_out
 
     def _transform_only(self, X: np.ndarray) -> np.ndarray:
         """Apply already-fitted transformers to X."""
         X_out = X
+
         for name, transformer in self._transformers:
             if not hasattr(transformer, "transform"):
                 raise RuntimeError(
                     f"Transformer '{name}' has no .transform() method."
                 )
             X_out = transformer.transform(X_out)
+
         return X_out
+
 
     # ------------------------------------------------------------------
     # Public API
@@ -131,11 +142,13 @@ class StreamingPipeline:
         -------
         self
         """
+
         X = np.atleast_2d(np.array(X, dtype=float))
         y = np.array(y)
         X_t = self._fit_transform(X, y)
 
         name, estimator = self._estimator
+
         if hasattr(estimator, "fit"):
             estimator.fit(X_t, y)
         elif hasattr(estimator, "partial_fit"):
@@ -144,6 +157,7 @@ class StreamingPipeline:
             raise RuntimeError(
                 f"Final estimator '{name}' has neither .fit() nor .partial_fit()."
             )
+        
         return self
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
@@ -160,6 +174,7 @@ class StreamingPipeline:
         -------
         self
         """
+
         X = np.atleast_2d(np.array(X, dtype=float))
         y = np.array(y)
 
@@ -171,6 +186,7 @@ class StreamingPipeline:
         X_t = self._fit_transform(X, y)
 
         name, estimator = self._estimator
+
         if hasattr(estimator, "partial_fit"):
             estimator.partial_fit(X_t, y, classes=classes)
         elif hasattr(estimator, "fit"):
@@ -179,6 +195,7 @@ class StreamingPipeline:
             raise RuntimeError(
                 f"Final estimator '{name}' has neither .partial_fit() nor .fit()."
             )
+        
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -192,9 +209,11 @@ class StreamingPipeline:
         -------
         np.ndarray, shape (n_samples,)
         """
+
         X = np.atleast_2d(np.array(X, dtype=float))
         X_t = self._transform_only(X)
         _, estimator = self._estimator
+
         return estimator.predict(X_t)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
@@ -208,13 +227,16 @@ class StreamingPipeline:
         -------
         np.ndarray, shape (n_samples, n_classes)
         """
+
         X = np.atleast_2d(np.array(X, dtype=float))
         X_t = self._transform_only(X)
         _, estimator = self._estimator
+
         if not hasattr(estimator, "predict_proba"):
             raise AttributeError(
                 f"Final estimator '{self._estimator[0]}' has no .predict_proba()."
             )
+        
         return estimator.predict_proba(X_t)
 
     def score(self, X: np.ndarray, y: np.ndarray) -> float:
@@ -229,6 +251,7 @@ class StreamingPipeline:
         -------
         float
         """
+
         preds = self.predict(X)
         return float(np.mean(preds == np.array(y)))
 
@@ -243,12 +266,14 @@ class StreamingPipeline:
         -------
         object : the step object
         """
+        
         return self.named_steps[name]
 
     def __repr__(self):
         steps_str = " -> ".join(
             f"{name}({obj.__class__.__name__})" for name, obj in self.steps
         )
+
         return f"StreamingPipeline([{steps_str}])"
 
 

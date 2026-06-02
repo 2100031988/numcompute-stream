@@ -45,6 +45,9 @@ class StreamingAccuracy(_StreamingMetric):
     >>> print(acc.result())
     """
 
+
+# <------- Cumulative accuracy implementation ------->
+
     def __init__(self):
         self._correct = 0
         self._total = 0
@@ -62,9 +65,13 @@ class StreamingAccuracy(_StreamingMetric):
         y_pred = np.array(y_pred)
         if y_true.shape != y_pred.shape:
             raise ValueError("y_true and y_pred must have the same shape.")
+        
         self._correct += int(np.sum(y_true == y_pred))
         self._total += len(y_true)
         self._history.append(self.result())
+
+
+# <------- End of cumulative accuracy implementation ------->
 
     def reset(self):
         """Clear all accumulated state."""
@@ -81,7 +88,7 @@ class StreamingAccuracy(_StreamingMetric):
         """
         return self._correct / self._total if self._total > 0 else 0.0
 
-    @property
+    @property                                   # Optional: expose history for analysis
     def history(self) -> np.ndarray:
         """Per-chunk cumulative accuracy history."""
         return np.array(self._history)
@@ -113,9 +120,12 @@ class StreamingPrecisionRecallF1(_StreamingMetric):
     >>> print(prf.result())
     """
 
+# <------- Cumulative precision/recall/F1 implementation ------->
+
     def __init__(self, average: str = "macro", pos_label=1):
         if average not in ("binary", "macro"):
             raise ValueError("average must be 'binary' or 'macro'")
+        
         self.average = average
         self.pos_label = pos_label
         self._y_true_all = []
@@ -128,6 +138,9 @@ class StreamingPrecisionRecallF1(_StreamingMetric):
     def reset(self):
         self._y_true_all = []
         self._y_pred_all = []
+
+
+# <------- Result implementation ------->
 
     def result(self) -> dict:
         """Return precision, recall, f1.
@@ -146,29 +159,38 @@ class StreamingPrecisionRecallF1(_StreamingMetric):
         return self._macro(yt, yp)
 
     @staticmethod
+
     def _binary(yt, yp, pos_label) -> dict:
         tp = np.sum((yp == pos_label) & (yt == pos_label))
         fp = np.sum((yp == pos_label) & (yt != pos_label))
         fn = np.sum((yp != pos_label) & (yt == pos_label))
+
         prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
         f1 = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
+
         return {"precision": float(prec), "recall": float(rec), "f1": float(f1)}
+
+
+# <------- Macro precision/recall/F1 implementation ------->
 
     @staticmethod
     def _macro(yt, yp) -> dict:
         classes = np.unique(yt)
         precs, recs, f1s = [], [], []
+
         for cls in classes:
             tp = np.sum((yp == cls) & (yt == cls))
             fp = np.sum((yp == cls) & (yt != cls))
             fn = np.sum((yp != cls) & (yt == cls))
+
             prec = tp / (tp + fp) if (tp + fp) > 0 else 0.0
             rec = tp / (tp + fn) if (tp + fn) > 0 else 0.0
             f1 = (2 * prec * rec / (prec + rec)) if (prec + rec) > 0 else 0.0
             precs.append(prec)
             recs.append(rec)
             f1s.append(f1)
+
         return {
             "precision": float(np.mean(precs)),
             "recall": float(np.mean(recs)),
@@ -177,6 +199,7 @@ class StreamingPrecisionRecallF1(_StreamingMetric):
 
     def __repr__(self):
         r = self.result()
+
         return (
             f"StreamingPrecisionRecallF1("
             f"precision={r['precision']:.4f}, "
@@ -203,9 +226,15 @@ class StreamingConfusionMatrix(_StreamingMetric):
     >>> print(cm.result())
     """
 
+
+# <------- Cumulative confusion matrix implementation ------->
+
     def __init__(self, classes=None):
         self.classes = np.array(classes) if classes is not None else None
         self._matrix = None
+
+
+# <------- Update implementation ------->
 
     def update(self, y_true: np.ndarray, y_pred: np.ndarray):
         y_true = np.array(y_true)
@@ -226,6 +255,9 @@ class StreamingConfusionMatrix(_StreamingMetric):
     def reset(self):
         self._matrix = None
 
+
+# <------- Result implementation ------->
+
     def result(self) -> np.ndarray:
         """Return accumulated confusion matrix.
 
@@ -235,10 +267,12 @@ class StreamingConfusionMatrix(_StreamingMetric):
         """
         if self._matrix is None:
             return np.array([[]])
+        
         return self._matrix.copy()
 
     def __repr__(self):
         shape = self._matrix.shape if self._matrix is not None else (0, 0)
+
         return f"StreamingConfusionMatrix(shape={shape})"
 
 
@@ -261,19 +295,27 @@ class RollingAccuracy(_StreamingMetric):
     >>> print(ra.result())
     """
 
+
+# <------- Rolling window accuracy implementation ------->
+
     def __init__(self, window_size: int = 200):
         if window_size < 1:
             raise ValueError("window_size must be >= 1")
+        
         self.window_size = window_size
         self._buffer_true = []
         self._buffer_pred = []
 
+
+# <------- Update implementation ------->
+
     def update(self, y_true: np.ndarray, y_pred: np.ndarray):
+
         y_true = list(np.array(y_true))
         y_pred = list(np.array(y_pred))
         self._buffer_true.extend(y_true)
         self._buffer_pred.extend(y_pred)
-        # Trim to window
+
         if len(self._buffer_true) > self.window_size:
             self._buffer_true = self._buffer_true[-self.window_size:]
             self._buffer_pred = self._buffer_pred[-self.window_size:]
@@ -281,6 +323,9 @@ class RollingAccuracy(_StreamingMetric):
     def reset(self):
         self._buffer_true = []
         self._buffer_pred = []
+
+
+# <------- Result implementation ------->
 
     def result(self) -> float:
         """Return accuracy over the current window.
@@ -291,8 +336,10 @@ class RollingAccuracy(_StreamingMetric):
         """
         if not self._buffer_true:
             return 0.0
+        
         yt = np.array(self._buffer_true)
         yp = np.array(self._buffer_pred)
+
         return float(np.mean(yt == yp))
 
     def __repr__(self):
@@ -306,6 +353,9 @@ class RollingAccuracy(_StreamingMetric):
 # ---------------------------------------------------------------------------
 # Convenience functions (stateless)
 # ---------------------------------------------------------------------------
+
+
+# <------- Accuracy convenience function implementation ------->
 
 def accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """Compute accuracy for a single batch.
@@ -321,13 +371,18 @@ def accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     yt = np.array(y_true)
     yp = np.array(y_pred)
+
     if yt.size == 0:
         return 0.0
+    
     return float(np.mean(yt == yp))
 
 
+# <------- Precision/Recall/F1 convenience function implementation ------->
+
 def precision_recall_f1(y_true: np.ndarray, y_pred: np.ndarray,
                          average: str = "macro", pos_label=1) -> dict:
+    
     """Compute precision, recall, F1 for a single batch.
 
     Parameters
@@ -341,10 +396,14 @@ def precision_recall_f1(y_true: np.ndarray, y_pred: np.ndarray,
     -------
     dict with keys 'precision', 'recall', 'f1'
     """
+
     metric = StreamingPrecisionRecallF1(average=average, pos_label=pos_label)
     metric.update(y_true, y_pred)
+
     return metric.result()
 
+
+# <------- Confusion matrix convenience function implementation ------->
 
 def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray,
                      classes=None) -> np.ndarray:
@@ -360,6 +419,8 @@ def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray,
     -------
     np.ndarray, shape (n_classes, n_classes)
     """
+
     cm = StreamingConfusionMatrix(classes=classes)
     cm.update(y_true, y_pred)
+    
     return cm.result()
