@@ -10,10 +10,14 @@ Run:
 Author: NumCompute-Stream
 """
 
+
+# <-------- Imports --------->
+
 import time
 import numpy as np
 import sys
 import os
+
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -27,6 +31,9 @@ from numcompute_stream.metrics import accuracy
 # Generate synthetic dataset
 # ---------------------------------------------------------------------------
 
+
+# <------- Generating synthetic dataset with non-linear decision boundary --------->
+
 def generate_data(n_samples=2000, n_features=10, seed=42):
     rng = np.random.default_rng(seed)
     X = rng.standard_normal((n_samples, n_features))
@@ -39,6 +46,9 @@ def generate_data(n_samples=2000, n_features=10, seed=42):
 # Streaming benchmark runner
 # ---------------------------------------------------------------------------
 
+
+# <------- Run benchmark for a given model under streaming conditions --------->
+
 def run_benchmark(model, X, y, chunk_size=100, model_name="Model", verbose=True):
     """Train model chunk-by-chunk and measure time + accuracy."""
     trainer = StreamTrainer(model, verbose=False)
@@ -46,7 +56,7 @@ def run_benchmark(model, X, y, chunk_size=100, model_name="Model", verbose=True)
     chunk_times = []
 
     chunks = list(chunk_data(X, y, chunk_size=chunk_size, shuffle=True, random_state=0))
-    # Hold out last chunk for evaluation
+
     eval_chunks = chunks[-3:]
     train_chunks = chunks[:-3]
 
@@ -66,6 +76,9 @@ def run_benchmark(model, X, y, chunk_size=100, model_name="Model", verbose=True)
     mean_chunk_time = float(np.mean(chunk_times))
     total_time = float(np.sum(chunk_times))
 
+
+# <------- Print benchmark results --------->
+
     if verbose:
         print(f"\n{'='*50}")
         print(f"  Model: {model_name}")
@@ -76,6 +89,9 @@ def run_benchmark(model, X, y, chunk_size=100, model_name="Model", verbose=True)
         print(f"  Mean time per chunk   : {mean_chunk_time*1000:.2f} ms")
         print(f"  Total training time   : {total_time:.4f} s")
         print(f"{'='*50}")
+
+
+# <------- Return benchmark results as a dictionary --------->
 
     return {
         "model": model_name,
@@ -89,6 +105,9 @@ def run_benchmark(model, X, y, chunk_size=100, model_name="Model", verbose=True)
 # ---------------------------------------------------------------------------
 # Vectorised vs loop baseline comparison
 # ---------------------------------------------------------------------------
+
+
+# <------- Benchmark NumPy vectorised mean vs Python loop mean --------->
 
 def benchmark_vectorised_vs_loop(n=100_000):
     """Compare NumPy vectorised mean vs Python loop mean."""
@@ -110,6 +129,9 @@ def benchmark_vectorised_vs_loop(n=100_000):
     t1 = time.perf_counter()
     loop_time = t1 - t0
 
+
+# <------- Print benchmark results with labels --------->
+
     print(f"\n{'='*50}")
     print("  Vectorised vs Loop Mean (n={:,})".format(n))
     print(f"{'='*50}")
@@ -117,6 +139,9 @@ def benchmark_vectorised_vs_loop(n=100_000):
     print(f"  Loop-based mean   : {loop_mean:.6f}  | time: {loop_time*1000:.4f} ms")
     print(f"  Speedup           : {loop_time/vec_time:.1f}x")
     print(f"{'='*50}")
+
+
+# <------- Return benchmark results as a dictionary --------->
 
     return {
         "vectorised_time_ms": vec_time * 1000,
@@ -128,6 +153,9 @@ def benchmark_vectorised_vs_loop(n=100_000):
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+
+# <------- Main entry point to run benchmarks --------->
 
 if __name__ == "__main__":
     print("\n" + "=" * 50)
@@ -155,6 +183,9 @@ if __name__ == "__main__":
         model_name="RandomForest (n=10, max_depth=5)"
     )
     results.append(r2)
+
+
+# <------- Run benchmark for Random Forest with more trees and deeper depth --------->
 
     r3 = run_benchmark(
         RandomForestClassifier(n_estimators=20, max_depth=7, random_state=0),
