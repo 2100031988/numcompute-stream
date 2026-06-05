@@ -72,6 +72,8 @@ def run_benchmark(model, X, y, chunk_size=100, model_name="Model", verbose=True)
         preds = model.predict(X_e)
         eval_accs.append(accuracy(y_e, preds))
 
+    # Compute mean accuracy and timing metrics
+    
     mean_eval_acc = float(np.mean(eval_accs))
     mean_chunk_time = float(np.mean(chunk_times))
     total_time = float(np.sum(chunk_times))
