@@ -20,6 +20,18 @@
 
 ---
 
+## Demo
+
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/64f67f8b-abde-40d7-a234-465e61fc0104" width="700" alt="NumCompute-Stream Demo"/>
+</p>
+
+<p align="center">
+  <em><a href="https://www.youtube.com/watch?v=xoPAAkc1kqA">Watch the full explanation here!</a></em>
+</p>
+
+---
+
 ## Overview
 
 **NumCompute** is the core package which is a lightweight machine learning framework built using **NumPy** and can function on libraries such as **scikit-learn**.
