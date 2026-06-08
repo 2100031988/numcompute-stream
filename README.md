@@ -23,7 +23,7 @@
 ## Demo
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/64f67f8b-abde-40d7-a234-465e61fc0104" width="700" alt="NumCompute-Stream Demo"/>
+  <img src="https://github.com/user-attachments/assets/a79da76b-60d1-4c44-9e41-c2bef671cd3f" width="700" alt="NumCompute-Stream Demo"/>
 </p>
 
 <p align="center">
